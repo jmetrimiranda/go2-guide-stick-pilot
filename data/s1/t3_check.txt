@@ -1,0 +1,22 @@
+==== check
+sportmodestate: 298 Hz   lowstate: 502 Hz
+battery power: 66.8 W   mech power: 0.7 W
+yaw rate now: -0.006 rad/s   rpy: [-0.03, 0.002, -2.9]
+mode: 0   gait_type: 0
+commands from other programs on rt/api/sport/request, rt/api/obstacles_avoid/request:
+  rt/api/obstacles_avoid/request: 64 requests, api_id 1002 (SwitchGet) x64; sample parameter: 
+   Stop RollCall, Nav2, the CMU stack and any app joystick before moving, and turn off
+   obstacle avoidance in the app.
+clock: 2026-11-23 20:00:28 UTC   (wall - monotonic = 1795461635.664 s)
+==== probe
+window 5 s   lowstate 501 Hz   sportmodestate 299 Hz
+battery: SOC 72 %   cells 8 x 3904-3911 mV (sum 31.27 V)   cycles 15   bms status 8
+power_v [V]         mean 30.27  min 30.25  max 30.28
+power_a [A]         mean 2.21  min 2.09  max 2.32
+power_v*power_a [W] mean 67.02  min 63.10  max 70.34
+bms current [A]     mean -2.78  min -2.81  max -2.74   -> |I| x sum(cells) ~ 86.9 W
+mech power sum|tau*dq| [W] mean 0.73  min 0.19  max 1.50
+foot_force (low): [43, 50, 45, 44]   motor temps: [37, 36, 37, 36, 35, 37, 45, 36, 37, 45, 37, 38]
+sport: mode 0  gait_type 0  body_height 0.320 m  rpy [-0.031, 0.002, -2.895]  yaw_speed mean -0.01  min -0.04  max 0.02
+==== avoid
+before: SwitchGet code 0, enable False

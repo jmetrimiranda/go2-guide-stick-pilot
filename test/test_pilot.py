@@ -562,7 +562,7 @@ def test_interrupt_at_ratings_keeps_completed_trial(work):
 
 def test_interrupt_in_countdown_writes_aborted_row(work):
     p = Pilot(work, ["run", "--stick", "test", "--reps", "1"], stdin="\n")
-    p.wait_text("q=quit): 3 ")
+    p.wait_text("q=quit):\n> 3 ")   # the question has its own line (read_line), then '> '
     p.kill(signal.SIGINT)
     check(p.finish(30) == 130, p.tail())
     check(not p.calls("Move"), "moved")

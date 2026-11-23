@@ -363,13 +363,21 @@ def flush_stdin(settle=0.0):
         pass
 
 
+def read_line(prompt):
+    """input() with the question on a line of its own. With DETACH=1 the question is only seen
+    through 'docker logs' after (re)attaching, and docker logs holds back an unfinished line: a
+    plain input(prompt) left the question invisible while the script waited (seen on 23/11/2026)."""
+    print(prompt.rstrip(), flush=True)
+    return input("> ")
+
+
 def ask_start(prompt):
     """Only Enter (start), s (skip) or q (quit) are accepted; anything else asks again.
     End of input counts as q. Never starts a trial on unknown input."""
     flush_stdin(settle=1.0)
     while True:
         try:
-            ans = input(prompt).strip().lower()
+            ans = read_line(prompt).strip().lower()
         except EOFError:
             print("\n(no more input: quitting)")
             return "q"
@@ -381,7 +389,7 @@ def ask_start(prompt):
 def ask(prompt):
     """Rating prompt; end of input counts as an empty answer."""
     try:
-        return input(prompt).strip()
+        return read_line(prompt).strip()
     except EOFError:
         return ""
 

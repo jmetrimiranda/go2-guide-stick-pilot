@@ -1,0 +1,26 @@
+{
+ "profile": "smooth",
+ "direction": "R",
+ "aborted": null,
+ "events": {
+  "still_start": 1795470950.044932,
+  "still_end": 1795470951.0576425,
+  "accel_start": 1795470951.057646,
+  "accel_end": 1795470952.068555,
+  "straight_start": 1795470952.0685585,
+  "straight_end": 1795470954.574331,
+  "turn_start": 1795470954.5743349,
+  "turn_end": 1795470957.9936924,
+  "straight2_start": 1795470957.9936967,
+  "straight2_end": 1795470959.5101242,
+  "decel_start": 1795470959.5101287,
+  "decel_end": 1795470960.522396,
+  "still2_start": 1795470960.522399,
+  "still2_end": 1795470961.5324423
+ },
+ "rows": {
+  "cmd": 568,
+  "sport": 3420,
+  "low": 5751
+ }
+}

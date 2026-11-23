@@ -1,0 +1,5 @@
+stick,profile,direction,n,robot_turn_deg,robot_lag_s,hand_lag_s,hand_peak_yaw,hand_peak_ah,hand_jerk_excess,mech_work_J,elec_energy_J,mech_excess_J,elec_excess_J,hand_cue_onset_s,n_hand
+rigid,smooth,L,4,89.733,0.141,0.278,0.729,3.792,11.249,94.653,618.797,19.455,18.97,0.388,4
+rigid,smooth,R,4,67.087,0.16,0.264,0.664,3.353,-0.772,85.246,612.056,-1.017,-20.42,0.28,4
+rigid,step,L,4,87.447,0.178,0.214,0.698,3.697,12.344,82.088,521.549,13.426,-1.947,0.051,4
+rigid,step,R,4,69.24,0.156,0.298,0.692,3.094,3.27,71.52,492.55,4.682,-21.077,0.388,4

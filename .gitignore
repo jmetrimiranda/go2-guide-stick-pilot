@@ -2,3 +2,10 @@
 __pycache__/
 *.pyc
 kit_piloto_go2.zip
+
+# Raw session data stays out of git (the session zip goes to a GitHub Release)
+data/*.zip
+data/**/cmd.csv
+data/**/sport.csv
+data/**/low.csv
+data/**/phone/

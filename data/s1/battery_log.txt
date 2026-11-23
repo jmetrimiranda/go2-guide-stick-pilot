@@ -1,0 +1,18 @@
+# Go2 SOC (%), leitura passiva a cada ~90 s (tools/probe_state.py), 23/11/2026
+18:41:xx SOC=37 (no sync_start)
+18:44:45 SOC=36
+18:46:23 SOC=35
+18:47:56 SOC=34
+18:49:29 SOC=34
+18:51:01 SOC=33
+18:52:34 SOC=32
+18:52:57 SOC=32
+18:54:30 SOC=31
+18:56:03 SOC=30
+18:56:17 SOC=30
+18:57:50 SOC=29
+18:59:23 SOC=28
+19:00:56 SOC=28
+19:02:29 SOC=27
+19:04:02 SOC=26
+19:05:xx SOC=26 (depois de religar o desvio de obstáculos)
