@@ -78,7 +78,15 @@ Sessão de 23/11/2026. Os campos marcados **[JORGE]** ainda precisam de mediçã
   - andando reto, desvia ~2–3°/s para a esquerda;
   - isso aparece igual nos dois perfis (diferença step − smooth no ângulo ≈ 0 em cada direção), então é do robô em malha aberta, não do formato do comando;
   - limites e comandos não foram alterados.
-- **Tentativa 1:** `robot_lag_s` = −0,07 s, o único negativo. Conferir na análise final.
+- **Tentativa 1, `robot_lag_s` = −0,071 s (o único negativo): artefato do atraso por centroide, não uma resposta adiantada do robô.** Verificado em 23/11/2026, depois de ver os dados; **a tentativa não foi excluída**.
+  - **O início da curva é normal:** `robot_onset_lag_s` (30 % do pico) = 0,01 s e `robot_t50_s` (post-hoc) = 0,028 s, dentro da faixa das outras tentativas `step` (0,00–0,02 s e 0,007–0,036 s).
+  - **O que muda é a forma do sinal nas bordas da janela** do centroide [início − 0,5 s, fim + 1,5 s]:
+    - é a única tentativa em que o robô gira um pouco **ao contrário depois de o comando acabar**: área de −0,033 rad em [fim, fim + 1,5 s], contra +0,02 a +0,11 rad nas outras 15;
+    - tem também a maior rotação no sentido da curva antes de ela começar: +0,022 rad em [−0,5 s, 0];
+    - as duas coisas deslocam o centroide do robô para antes do centroide do comando.
+  - **O valor depende da janela:** −0,013 s (fim + 1,0 s), −0,048 s (início em 0), −0,071 s (padrão), −0,127 s (fim + 2,0 s). Nas outras 15 tentativas o atraso fica positivo em todas essas janelas.
+  - Ela foi a primeira tentativa do bloco, logo depois do `BalanceStand`.
+  - O centroide supõe uma resposta linear, e essa contra-rotação no fim a quebra. Para o atraso robô–comando nesta tentativa, o início a 30 % e o t50 são mais confiáveis.
 - **T5 (`data/teste`, sem bastão):**
   - nas tentativas 006 e 008 o Jorge usou o controle por falta de espaço;
   - depois disso foram usadas duas marcas de partida no chão, partindo do lado contrário ao da curva;
