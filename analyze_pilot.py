@@ -15,11 +15,13 @@ note), trials before the step use sync_start only, trials after it use sync_end 
 skipped.
 
 Outputs in <session>/results/: trials.csv, summary.csv, summary.md, example_trials.png, metrics.png
-(plus summary_by_direction.csv and sync.json); outputs of an earlier run are removed first.
+(plus summary_by_direction.csv, sync.json and the post-hoc ensemble_curves.csv); outputs of an earlier
+run are removed first. The 'Post-hoc' metrics (onset yaw acceleration, 50 % rise times, ensemble curves)
+were defined on 23 Nov 2026 after the s1 data had been seen; everything else was fixed before collection.
 A trial whose note starts with 'aborted' or 'skipped' is left out even if its times are complete, so a
 bad trial can be excluded by editing its note.
 """
-import argparse, glob, json, os, sys
+import argparse, glob, json, os, sys, warnings
 from collections import namedtuple
 import numpy as np
 trapz = getattr(np, "trapezoid", None) or np.trapz
@@ -42,21 +44,30 @@ CLOCK_STEP_TOL = 0.05  # s; a larger change of the robot's wall - monotonic time
 GYRO_STILL_STD = 0.02  # rad/s; the gyro bias is measured in the 1 s 'still' phase only if the yaw rate is this quiet
 CUE_THR, CUE_HOLD = 0.1, 0.25   # rad/s, s: hand yaw rate held this long = the hand feels the turn (cue onset)
 TURN_OK, HAND_LAG_OK = (80.0, 100.0), (0.0, 1.0)     # sanity ranges of the T6 checks
+# POST-HOC (defined on 23 Nov 2026 after the s1 data had been seen, not part of the planned analysis)
+POSTHOC_FC = 3.0                     # Hz; 2nd-order Butterworth, filtfilt (the filter of gz3b / hy3b)
+T50_PLATEAU = (2.0, 3.0)             # s after turn start; plateau = median filtered yaw rate in this window
+ENSEMBLE_T = np.round(np.arange(-2.0, 5.0 + 0.5 / FS, 1 / FS), 2)   # s around turn start, 100 Hz
+POSTHOC_COLS = ["robot_yaw_acc_onset", "hand_yaw_acc_onset", "cmd_t50_s", "robot_t50_s", "hand_t50_s"]
+POSTHOC_LABELS = ["robot yaw accel at onset (rad/s²)", "hand yaw accel at onset (rad/s²)",
+                  "command t50 (s)", "robot t50 (s)", "hand t50 (s)"]
 TRIAL_COLS = ["trial", "stick", "profile", "direction", "t_start", "t_turn_start", "t_turn_end", "t_end"]
 HAND_METRICS = ["hand_lag_s", "hand_onset_lag_s", "hand_cue_onset_s", "hand_peak_yaw", "hand_peak_ah",
-                "hand_jerk_turn", "hand_jerk_pre", "hand_jerk_excess", "hand_sway_pre"]
+                "hand_jerk_turn", "hand_jerk_pre", "hand_jerk_excess", "hand_sway_pre",
+                "hand_yaw_acc_onset", "hand_t50_s"]
 RESULT_COLS = ["trial", "stick", "profile", "direction", "robot_turn_deg", "robot_lag_s",
                "robot_peak_yaw_acc", "hand_lag_s", "hand_peak_yaw", "hand_peak_ah", "hand_jerk_turn",
                "hand_jerk_pre", "mech_work_J", "elec_energy_J", "clarity", "comfort", "hand_jerk_excess",
                # added columns
                "robot_onset_lag_s", "hand_onset_lag_s", "hand_cue_onset_s", "mech_excess_J", "elec_excess_J",
                "mech_walk_W", "elec_walk_W", "turn_win_s", "robot_yaw_src", "gyro_bias", "gyro_still_std",
-               "robot_sway_pre", "hand_sway_pre", "phone_max_gap_s", "robot_sign_ok", "hand_sign_ok", "note"]
+               "robot_sway_pre", "hand_sway_pre", "phone_max_gap_s", "robot_sign_ok", "hand_sign_ok", "note"
+               ] + POSTHOC_COLS
 SUMMARY_COLS = ["robot_turn_deg", "robot_lag_s", "hand_lag_s", "hand_peak_yaw", "hand_peak_ah",
                 "hand_jerk_excess", "mech_work_J", "elec_energy_J", "mech_excess_J", "elec_excess_J",
                 "hand_cue_onset_s"]
 OUTPUTS = ["trials.csv", "summary.csv", "summary_by_direction.csv", "summary.md", "sync.json",
-           "example_trials.png", "metrics.png"]
+           "example_trials.png", "metrics.png", "ensemble_curves.csv"]
 DIFF_LABELS = [("hand_jerk_excess", "hand jerk added (m/s³)"), ("hand_peak_ah", "peak hand accel (m/s²)"),
                ("hand_lag_s", "hand lag (s)"), ("hand_cue_onset_s", "hand cue onset (s)"),
                ("robot_lag_s", "robot lag (s)"),
@@ -448,6 +459,25 @@ def dot_sign(a, b):
     return float(np.sign(np.sum(a * b)))
 
 
+def t50(t_rel, y):
+    """POST-HOC. First time >= 0 s after the turn start at which y reaches 50 % of its plateau (median of y
+    over T50_PLATEAU), linearly interpolated between the two samples around the crossing. NaN without a
+    positive plateau or a crossing."""
+    w = (t_rel >= T50_PLATEAU[0]) & (t_rel <= T50_PLATEAU[1])
+    plateau = float(np.median(y[w])) if w.any() else np.nan
+    if not np.isfinite(plateau) or plateau <= 0:
+        return np.nan
+    half = 0.5 * plateau
+    k = np.flatnonzero((t_rel >= 0) & (y >= half))
+    if not len(k):
+        return np.nan
+    i = k[0]
+    tc = t_rel[i]
+    if i > 0 and y[i - 1] < half:
+        tc = t_rel[i - 1] + (half - y[i - 1]) / (y[i] - y[i - 1]) * (t_rel[i] - t_rel[i - 1])
+    return float(max(tc, 0.0))
+
+
 def prepare_trial(session, row, phone, offset_fn):
     """Resample one trial onto a 100 Hz grid. Returns (data, None), or (None, reason to skip it)."""
     d = os.path.join(session, f"trial_{int(row.trial):03d}")
@@ -564,9 +594,22 @@ def trial_metrics(p, s_gyro, s_hand):
         hand_sign_ok=bool(p["vote_hand"] == s_hand) if p["vote_hand"] else np.nan,
         note=row_note(row),
     )
+    # POST-HOC (23 Nov 2026, after s1 was seen). y_r and y_h are already the 3 Hz (2nd-order Butterworth,
+    # filtfilt), baseline-removed, turn-positive yaw rates; the command gets the same filter for its t50.
+    tr = t - tt0
+    acc_win = (tr >= 0) & (tr <= JERK_WIN)
+    res.update(
+        # signed maximum (positive = the turn starting), not the absolute value
+        robot_yaw_acc_onset=float(np.max(np.gradient(y_r, 1 / FS)[acc_win])),
+        hand_yaw_acc_onset=float(np.max(np.gradient(y_h, 1 / FS)[acc_win])),
+        cmd_t50_s=t50(tr, lp(u, POSTHOC_FC)), robot_t50_s=t50(tr, y_r), hand_t50_s=t50(tr, y_h),
+    )
+    p["curves"] = {k: np.interp(ENSEMBLE_T, tr, v, left=np.nan, right=np.nan)
+                   for k, v in (("cmd", u), ("robot", y_r), ("hand", y_h))}
     if p["phone_gap"] > MAX_GAP:
         for k in HAND_METRICS:
             res[k] = np.nan
+        p["curves"]["hand"][:] = np.nan
         return res, None
     series = dict(t=t - tt0, cmd=u, robot=y_r, hand=y_h,
                   ah=np.linalg.norm(p["a_h"], axis=1), turn_len=tt1 - tt0)
@@ -749,6 +792,62 @@ def skipped_section(skipped, partial):
     return lines + [""]
 
 
+def ensemble_curves(preps):
+    """POST-HOC. Per stick x profile: median and IQR over the trials of the turn-positive yaw rates of the
+    command (as sent), robot and hand (baseline removed, 3 Hz), from -2 to +5 s around the turn start."""
+    groups = {}
+    for p in preps:
+        if "curves" in p:
+            groups.setdefault((p["row"].stick, p["row"].profile), []).append(p["curves"])
+    parts = []
+    for s in stick_order({k[0] for k in groups}):
+        for prof in ("step", "smooth"):
+            if (s, prof) not in groups:
+                continue
+            lst = groups[(s, prof)]
+            out = {"stick": s, "profile": prof, "t_s": ENSEMBLE_T, "n_trials": len(lst)}
+            for k in ("cmd", "robot", "hand"):
+                m = np.vstack([c[k] for c in lst])
+                with warnings.catch_warnings():          # all-NaN columns (no phone data) stay NaN quietly
+                    warnings.simplefilter("ignore", RuntimeWarning)
+                    out[f"{k}_median"] = np.nanmedian(m, axis=0)
+                    out[f"{k}_q25"], out[f"{k}_q75"] = np.nanpercentile(m, [25, 75], axis=0)
+                if k == "hand":
+                    out["n_hand"] = np.sum(np.isfinite(m), axis=0)
+            parts.append(pd.DataFrame(out))
+    return pd.concat(parts, ignore_index=True).round(4) if parts else pd.DataFrame()
+
+
+def posthoc_section(df):
+    """POST-HOC metrics table for summary.md (defined after the s1 data had been seen)."""
+    lines = ["## Post-hoc", "",
+             "Defined on 23 Nov 2026, after the s1 data had been seen: not part of the analysis planned before "
+             "the collection. Descriptive only.", "",
+             "| stick | profile | n | " + " | ".join(POSTHOC_LABELS) + " |",
+             "|---|---|---|" + "---|" * len(POSTHOC_COLS)]
+    g = df.groupby(["stick", "profile"])[POSTHOC_COLS]
+    med, q1, q3 = g.median(), g.quantile(0.25), g.quantile(0.75)
+    for s in stick_order(set(df.stick)):
+        for prof in ("step", "smooth"):
+            if (s, prof) not in med.index:
+                continue
+            n = int(((df.stick == s) & (df.profile == prof)).sum())
+            cells = [f"{fmt(med.loc[(s, prof), c])} [{fmt(q1.loc[(s, prof), c])}–{fmt(q3.loc[(s, prof), c])}]"
+                     for c in POSTHOC_COLS]
+            lines.append(f"| {s} | {prof} | {n} | " + " | ".join(cells) + " |")
+    lines += ["", "Median [IQR]. Yaw rates signed so the turn is positive, baseline (mean of the 2 s before the "
+              f"turn) removed, low-passed at {POSTHOC_FC:g} Hz (2nd-order Butterworth, filtfilt). Yaw accel at "
+              f"onset: maximum of the signed time derivative in [turn start, turn start + {JERK_WIN} s] "
+              "(positive = the turn starting; not the absolute value). t50: first time after the turn start at "
+              "which the yaw rate reaches 50 % of its plateau (median between "
+              f"{T50_PLATEAU[0]:g} and {T50_PLATEAU[1]:g} s after the turn start), linearly interpolated; the "
+              "command is filtered the same way, and since filtfilt is zero-phase the filtered step command "
+              "crosses 50 % at about 0 s. Per-trial values in trials.csv (" + ", ".join(POSTHOC_COLS) + "). "
+              "Ensemble yaw-rate curves (median and IQR over the trials, -2 to +5 s around the turn start, "
+              "100 Hz; command as sent, robot and hand as above) in ensemble_curves.csv.", ""]
+    return lines
+
+
 def sync_section(info):
     drift = f", drift {info['drift_ms']:.1f} ms between the syncs" if info["drift_ms"] is not None else ""
     lines = ["## Clock sync", "", f"Model: {info['kind']}{drift}."]
@@ -908,6 +1007,10 @@ def main(session, robot_knock_floor=1.5):
                 f"{sign_line}\n\n")
         f.write("\n".join(direction_section(df) + [""] + skipped_section(skipped, partial)
                           + t6_section(sync, df, skipped, partial) + [""] + sync_section(sync)))
+        f.write("\n" + "\n".join(posthoc_section(df)))
+    ens = ensemble_curves(preps)
+    if len(ens):
+        ens.to_csv(os.path.join(out, "ensemble_curves.csv"), index=False)
     print(open(os.path.join(out, "summary.md")).read())
     print("figures:", *figures)
 
