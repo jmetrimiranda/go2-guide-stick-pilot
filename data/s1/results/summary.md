@@ -46,14 +46,3 @@ None: every row of trials.csv was analysed.
 Model: knock (start+end), drift 69.6 ms between the syncs.
 - sync_start: 5 robot knocks, 5 matched, offset 13.9228 s; robot top peaks [1.99, 1.37, 1.28, 1.12, 0.92] (threshold 0.5 m/s²); phone top peaks [6.31, 5.49, 3.66, 3.64, 3.31]; candidates (matched, offset s, extra peaks) [(5, 13.9228, 0), (5, 612.4823, 9), (5, 396.9925, 16), (4, 554.7964, 10)]
 - sync_end: 5 robot knocks, 5 matched, offset 13.9924 s; robot top peaks [1.49, 1.45, 1.39, 1.37, 1.1] (threshold 0.5 m/s²); phone top peaks [3.75, 3.64, 3.45, 2.39, 2.26]; candidates (matched, offset s, extra peaks) [(5, 13.9924, 0), (5, -737.8528, 7), (5, -819.5229, 11), (5, -818.6911, 11)]
-
-## Post-hoc
-
-Defined on 23 Nov 2026, after the s1 data had been seen: not part of the analysis planned before the collection. Descriptive only.
-
-| stick | profile | n | robot yaw accel at onset (rad/s²) | hand yaw accel at onset (rad/s²) | command t50 (s) | robot t50 (s) | hand t50 (s) |
-|---|---|---|---|---|---|---|---|
-| rigid | step | 8 | 3.53 [3.03–4.16] | 2.44 [2.03–2.61] | 0.01 [0.00–0.01] | 0.03 [0.02–0.03] | 0.31 [0.17–0.42] |
-| rigid | smooth | 8 | 1.66 [1.39–2.19] | 2.12 [1.87–2.66] | 0.40 [0.40–0.40] | 0.43 [0.41–0.47] | 0.71 [0.69–0.74] |
-
-Median [IQR]. Yaw rates signed so the turn is positive, baseline (mean of the 2 s before the turn) removed, low-passed at 3 Hz (2nd-order Butterworth, filtfilt). Yaw accel at onset: maximum of the signed time derivative in [turn start, turn start + 4.12 s] (positive = the turn starting; not the absolute value). t50: first time after the turn start at which the yaw rate reaches 50 % of its plateau (median between 2 and 3 s after the turn start), linearly interpolated; the command is filtered the same way, and since filtfilt is zero-phase the filtered step command crosses 50 % at about 0 s. Per-trial values in trials.csv (robot_yaw_acc_onset, hand_yaw_acc_onset, cmd_t50_s, robot_t50_s, hand_t50_s). Ensemble yaw-rate curves (median and IQR over the trials, -2 to +5 s around the turn start, 100 Hz; command as sent, robot and hand as above) in ensemble_curves.csv.

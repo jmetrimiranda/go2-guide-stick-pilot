@@ -19,17 +19,17 @@ TMP = tempfile.mkdtemp(prefix="go2_analysis_test_")
 ENV = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")     # leave no __pycache__ behind in the repo
 OFF, DRIFT, T0 = 37.42, 2e-5, 1795000000.0              # clock truth used by the simulator
 OUTPUTS = ("trials.csv", "summary.csv", "summary.md", "example_trials.png", "metrics.png",
-           "summary_by_direction.csv", "sync.json", "ensemble_curves.csv")
+           "summary_by_direction.csv", "sync.json")
 ORIG_TRIAL_COLS = ["trial", "stick", "profile", "direction", "robot_turn_deg", "robot_lag_s",
                    "robot_peak_yaw_acc", "hand_lag_s", "hand_peak_yaw", "hand_peak_ah", "hand_jerk_turn",
                    "hand_jerk_pre", "mech_work_J", "elec_energy_J", "clarity", "comfort", "hand_jerk_excess"]
 ORIG_SUMMARY_COLS = ["stick", "profile", "n", "robot_turn_deg", "robot_lag_s", "hand_lag_s", "hand_peak_yaw",
                      "hand_peak_ah", "hand_jerk_excess", "mech_work_J", "elec_energy_J"]
 HAND = ["hand_lag_s", "hand_onset_lag_s", "hand_cue_onset_s", "hand_peak_yaw", "hand_peak_ah", "hand_jerk_turn",
-        "hand_jerk_pre", "hand_jerk_excess", "hand_sway_pre", "hand_yaw_acc_onset", "hand_t50_s"]
+        "hand_jerk_pre", "hand_jerk_excess", "hand_sway_pre"]
 HAND_LAG_TRUTH = {"rigid": 0.205, "flexible": 0.59}     # simulated mean hand delay: delay + tau + tau/2
 ROBOT = ["robot_turn_deg", "robot_lag_s", "robot_onset_lag_s", "robot_peak_yaw_acc", "mech_work_J",
-         "elec_energy_J", "mech_excess_J", "elec_excess_J", "robot_yaw_acc_onset", "cmd_t50_s", "robot_t50_s"]
+         "elec_energy_J", "mech_excess_J", "elec_excess_J"]
 
 _sessions = {}
 
@@ -244,33 +244,6 @@ def test_phone_gap_only_that_trial():
     summ = results(d1, "summary.csv").set_index(["stick", "profile"])
     assert summ.loc[("rigid", "smooth"), "n"] == 5 and summ.loc[("rigid", "smooth"), "n_hand"] == 4
     assert "| rigid | smooth | 5 (hand 4) |" in md and "| rigid | step | 5 |" in md
-
-
-def test_posthoc_metrics():
-    """POST-HOC metrics (defined on 23 Nov 2026 after the s1 data had been seen): 50 % rise times of the
-    3 Hz command, robot and hand yaw rates, signed onset yaw acceleration, ensemble curves."""
-    d, p = session()
-    ok(p)
-    df = results(d)
-    g = df.groupby("profile")[["cmd_t50_s", "robot_t50_s", "hand_t50_s", "robot_yaw_acc_onset",
-                               "hand_yaw_acc_onset"]].median()
-    # zero-phase filter: the step command crosses 50 % at ~0 s, the 0.8 s cosine ramp at ~0.4 s
-    assert abs(g.cmd_t50_s.step) < 0.03 and abs(g.cmd_t50_s.smooth - 0.40) < 0.03, g
-    assert g.robot_t50_s.step < g.robot_t50_s.smooth and g.hand_t50_s.step < g.hand_t50_s.smooth, g
-    assert (g.robot_t50_s > g.cmd_t50_s).all() and (g.hand_t50_s > g.robot_t50_s).all(), g
-    # signed maximum: positive (the turn starting), and larger for the step than for the ramp
-    assert (df[["robot_yaw_acc_onset", "hand_yaw_acc_onset"]] > 0).all(axis=None)
-    assert g.robot_yaw_acc_onset.step > g.robot_yaw_acc_onset.smooth, g
-    e = results(d, "ensemble_curves.csv")
-    groups = df.groupby(["stick", "profile"]).size()
-    assert len(e) == 701 * len(groups) and e.t_s.min() == -2.0 and e.t_s.max() == 5.0, (len(e), groups)
-    for (s, prof), n in groups.items():
-        ge = e[(e.stick == s) & (e.profile == prof)].set_index("t_s")
-        assert (ge.n_trials == n).all() and (ge.n_hand == n).all()
-        assert abs(ge.cmd_median[1.5] - 0.6) < 1e-6 and abs(ge.cmd_median[-1.0]) < 1e-9
-        assert (ge.robot_q25 <= ge.robot_median + 1e-9).all() and (ge.robot_median <= ge.robot_q75 + 1e-9).all()
-    md = summary_md(d)
-    assert "## Post-hoc" in md and "after the s1 data had been seen" in md and "| rigid | step |" in md.split("## Post-hoc")[1]
 
 
 def test_spurious_knocks_and_missed_knock():
