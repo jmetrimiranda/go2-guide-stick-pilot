@@ -1,0 +1,19 @@
+Post-hoc turn-onset metrics (low gyro for the robot), median [IQR], n per profile:
+  robot_onset_acc  step 3.63 [3.13-4.28] (n=8) | smooth 1.67 [1.42-2.19] (n=8)
+  robot_walk_acc   step 0.95 [0.80-1.06] (n=8) | smooth 1.08 [0.96-1.13] (n=8)
+  hand_onset_acc   step 2.44 [2.03-2.61] (n=8) | smooth 2.12 [1.86-2.66] (n=8)
+  hand_walk_acc    step 1.39 [1.09-1.67] (n=8) | smooth 1.77 [1.54-2.08] (n=8)
+  cmd_t50          step 0.00 [0.00-0.00] (n=8) | smooth 0.41 [0.41-0.41] (n=8)
+  robot_t50        step 0.06 [0.05-0.06] (n=8) | smooth 0.47 [0.46-0.50] (n=8)
+  hand_t50         step 0.47 [0.37-0.50] (n=8) | smooth 0.77 [0.74-0.80] (n=8)
+  clarity_1to7     step 7.00 [6.00-7.00] (n=7) | smooth 7.00 [6.75-7.00] (n=8)
+  comfort_1to7     step 6.00 [6.00-6.00] (n=8) | smooth 6.00 [6.00-6.00] (n=8)
+By turn direction (medians of 4 trials):
+                   robot_onset_acc  hand_onset_acc  hand_t50
+direction profile                                           
+L         smooth              2.20            1.85      0.80
+          step                3.11            1.93      0.33
+R         smooth              1.35            2.74      0.74
+          step                4.06            2.68      0.50
+Ensemble mean step  : t50 command 0.00 s, robot 0.04 s, hand 0.44 s | onset acc robot 3.62, hand 1.42 rad/s^2
+Ensemble mean smooth: t50 command 0.41 s, robot 0.46 s, hand 0.74 s | onset acc robot 1.41, hand 1.62 rad/s^2

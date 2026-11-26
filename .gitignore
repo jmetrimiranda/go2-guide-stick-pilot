@@ -9,3 +9,14 @@ data/**/cmd.csv
 data/**/sport.csv
 data/**/low.csv
 data/**/phone/
+
+# Never published: robot computer survey, video material (face, home), test sessions,
+# Claude Code memories and secrets
+data/s1/orin_survey.txt
+data/**/video_check/
+data/**/video_check.zip
+data/teste/
+data/teste_sync/
+.claude/
+.env
+*.env
