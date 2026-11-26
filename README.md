@@ -59,8 +59,8 @@ from 1 to 7. Session: 23 November 2026, indoors, on a tiled floor.
 
 ### Planned analysis
 
-The analysis was written before the session and is fixed in commit `52f948a` (a git commit, not a
-formal pre-registration). Code: `analyze_pilot.py`. Full table and definitions:
+The analysis was written before the session and committed on 22 November 2026, the day before it,
+in commit `52f948a` (a git commit, not a formal pre-registration). Code: `analyze_pilot.py`. Full table and definitions:
 [`data/s1/results/summary.md`](data/s1/results/summary.md). Median [IQR], 8 trials per profile:
 
 | profile | hand jerk added (m/s³) | peak hand accel. (m/s²) | hand lag behind robot (s) | hand cue onset (s) | joint work above walking (J) |
@@ -99,8 +99,8 @@ robot but not at the hand, where the smooth cue arrives about 0.3 s later.*
 - **Hand:** the turn-onset yaw acceleration was similar (2.12 vs 2.44 rad/s²) and not far above the
   gait sway measured the same way during straight walking (1.49 rad/s²). On the mean curves, where
   the sway averages out, it was 1.62 (smooth) vs 1.42 rad/s² (step), against 1.41 vs 3.62 at the robot.
-- **Delay:** the smooth cue reached half of its peak 0.30 s later at the hand. Half of the plateau,
-  or a fixed 0.3 rad/s threshold, gives the same 0.30–0.32 s.
+- **Delay:** the smooth cue reached half of its peak 0.30 s later at the hand. With other
+  half-amplitude definitions (a fixed 0.3 rad/s, or half of the plateau) the delay is 0.30–0.39 s.
 - The direction of each difference is the same within left turns and within right turns, but the
   size varies: the hand delay was 0.47 s in left turns and 0.24 s in right turns
   ([`figures/posthoc_summary.txt`](figures/posthoc_summary.txt)).
@@ -128,12 +128,17 @@ hand.
 
 ## Safety
 
-Low speeds with hard caps in the script (0.5 m/s and 1.0 rad/s), `StopMove` on every exit path,
-the remote control in hand, eyes open and a clear indoor area. The robot's obstacle avoidance was
+Low speeds with hard caps in the script (0.5 m/s and 1.0 rad/s), `StopMove` on every exit of the
+script (normal end, errors, Ctrl-C and termination signals; Ctrl-C while walking was tested only
+offline), the remote control in hand, eyes open and a clear indoor area. The robot's obstacle avoidance was
 switched off for the trials, because it alters velocity commands, and switched back on afterwards.
 The change is recorded in the session notes.
 
 ## Reproduce
+
+The raw CSV files (~100 MB) are not in git. Download `s1_raw_data.zip` from the
+[v1.0 release](https://github.com/jmetrimiranda/go2-guide-stick-pilot/releases/tag/v1.0) and unzip it
+at the repository root; it adds the raw robot, command and phone files to `data/s1/`. Then:
 
 ```bash
 pip install numpy pandas scipy matplotlib
@@ -152,7 +157,7 @@ the robot; `run` does. Read the safety notes in the script before using it.
 | `analyze_pilot.py` | planned analysis |
 | `make_figures.py` | post-hoc metrics and the figures in this README |
 | `cad/` | printed parts (STL and OpenSCAD) and assembly notes |
-| `tools/` | helpers for the robot computer, the session checklist and the notes template (in Portuguese) |
+| `tools/` | helpers for the robot computer and the session notes template (in Portuguese) |
 | `test/` | offline tests: simulated sessions for the analysis and a fake Unitree SDK for the control script |
 | `data/s1/` | trial list, per-trial event times, sync metadata, notes (in Portuguese) and results; the raw robot and phone CSVs are not in git |
 | `figures/` | figures and post-hoc tables |
