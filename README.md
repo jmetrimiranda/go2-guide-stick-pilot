@@ -10,9 +10,8 @@ the robot's body started to turn, but at the hand it mostly delayed the cue. The
 reached half of its peak 0.30 s later, and the turn started about as sharply at the hand with both
 commands. Clarity and comfort ratings, given without knowing the profile, did not differ.
 
-![Trial 8 at the turn command, at the end of the turn and 2 s later](figures/setup_trial08.jpg)
-*Trial 8 (step profile, right turn) at the turn command, at the end of the turn and 2 s later.
-The phone is taped to the stick near the hand.*
+![Trial 8, 2 s after the end of the turn](figures/setup_trial08.jpg)
+*Trial 8 (step profile, right turn), 2 s after the end of the turn. The phone is taped to the stick near the hand.*
 
 > **Scope:** one sighted participant (the author), eyes open, 16 trials in one session. This is an
 > engineering pilot to learn the method. It is not a user study and says nothing yet about blind or
